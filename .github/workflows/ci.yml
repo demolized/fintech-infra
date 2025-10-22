@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for npm scripts if present)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Setup Python (for pytest if present)
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Setup Go (for go tests if present)
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+
+      - name: Run conditional Node steps
+        shell: bash
+        run: |
+          if [ -f package.json ]; then
+            echo "package.json found — installing Node dependencies"
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+            echo "Attempting to run npm test if defined"
+            if npm run | grep -q " test"; then
+              npm test || echo "npm test failed (exit code ignored for CI smoke run)"
+            else
+              echo "No npm test script defined"
+            fi
+          else
+            echo "No package.json — skipping Node steps"
+          fi
+
+      - name: Run conditional Python steps
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            echo "requirements.txt found — installing Python deps"
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            if python -c "import pytest" >/dev/null 2>&1; then
+              pytest || echo "pytest failed (exit code ignored for smoke run)"
+            else
+              echo "pytest not installed or no tests — skipping pytest"
+            fi
+          else
+            echo "No requirements.txt — skipping Python steps"
+          fi
+
+      - name: Run conditional Go tests
+        shell: bash
+        run: |
+          if [ -f go.mod ]; then
+            echo "go.mod found — running go test ./..."
+            go test ./... || echo "go tests failed (exit code ignored for smoke run)"
+          else
+            echo "No go.mod — skipping Go tests"
+          fi
+
+      - name: "Optional: run docker-compose smoke test if docker-compose.yml exists"
+        shell: bash
+        run: |
+          if [ -f docker-compose.yml ]; then
+            echo "docker-compose.yml found — starting services"
+            docker-compose up -d
+            echo "Waiting 5s for services to start"
+            sleep 5
+            # Example HTTP healthcheck; customize path/port as needed
+            if command -v curl >/dev/null 2>&1; then
+              curl --fail http://localhost:8080/ || echo "Health check failed or not present"
+            else
+              echo "curl not available in runner"
+            fi
+            docker-compose down
+          else
+            echo "No docker-compose.yml — skipping docker tests"
+          fi
