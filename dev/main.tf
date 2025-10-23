@@ -63,7 +63,7 @@ module "eks-client-node" {
     sudo ./aws/install
 
     echo "Installing Terraform..."
-    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /prod/null
+    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
     sudo apt-get update -y
     sudo apt-get install -y terraform
@@ -76,7 +76,7 @@ module "eks-client-node" {
     export PATH="$HOME/bin:$PATH"
 
     echo "Installing Amazon SSM Agent..."
-    if snap list amazon-ssm-agent >/prod/null 2>&1; then
+    if snap list amazon-ssm-agent >/dev/null 2>&1; then
       echo "Amazon SSM Agent is already installed."
     else
       sudo snap install amazon-ssm-agent --classic
@@ -87,7 +87,7 @@ module "eks-client-node" {
     sudo apt-get remove -y docker docker-engine docker.io containerd runc
     sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /prod/null
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get update -y
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io
     sudo systemctl enable docker
