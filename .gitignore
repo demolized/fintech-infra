@@ -28,3 +28,5 @@ terraform.rc
 #Ignore visual studio workspace
 *.code-workspace
 
+# macOS
+.DS_Store
