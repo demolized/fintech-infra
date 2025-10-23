@@ -4,7 +4,7 @@
 
 module "vpc" {
   source      = "./../modules/vpc"
-  main-region = var.main-region
+  main_region = var.main-region
 }
 
 # ################################################################################
@@ -15,9 +15,12 @@ module "eks" {
   source             = "./../modules/eks-cluster"
   cluster_name       = var.cluster_name
   rolearn            = var.rolearn
+  cni_role_arn       = module.iam.cni_role_arn
   security_group_ids = [module.eks-client-node.eks_client_sg]
   vpc_id             = module.vpc.vpc_id
   private_subnets    = module.vpc.private_subnets
+  tags               = local.common_tags
+  env_name           = var.env_name
 }
 
 # ################################################################################
@@ -63,7 +66,7 @@ module "eks-client-node" {
     sudo ./aws/install
 
     echo "Installing Terraform..."
-    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /prod/null
+    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
     sudo apt-get update -y
     sudo apt-get install -y terraform
@@ -76,7 +79,7 @@ module "eks-client-node" {
     export PATH="$HOME/bin:$PATH"
 
     echo "Installing Amazon SSM Agent..."
-    if snap list amazon-ssm-agent >/prod/null 2>&1; then
+    if snap list amazon-ssm-agent >/dev/null 2>&1; then
       echo "Amazon SSM Agent is already installed."
     else
       sudo snap install amazon-ssm-agent --classic
@@ -87,7 +90,7 @@ module "eks-client-node" {
     sudo apt-get remove -y docker docker-engine docker.io containerd runc
     sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /prod/null
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get update -y
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io
     sudo systemctl enable docker
@@ -119,9 +122,13 @@ module "ecr" {
 
 
 module "iam" {
-  source      = "./../modules/iam"
-  environment = var.env_name
-  tags        = local.common_tags
+  source            = "./../modules/iam"
+  environment       = var.env_name
+  aws_region        = var.main-region
+  aws_account_id    = var.aws_account_id
+  eks_oidc_provider = local.eks_oidc_provider
+  cluster_name      = var.cluster_name
+  tags              = local.common_tags
 }
 
 
@@ -138,16 +145,6 @@ module "jenkins-server" {
   subnet_id         = module.vpc.public_subnets[0]
 }
 
-
-module "terraform-node" {
-  source            = "./../modules/terraform-node"
-  ami_id            = local.final_ami_id
-  instance_type     = var.instance_type
-  key_name          = var.key_name
-  main-region       = var.main-region
-  security_group_id = module.eks-client-node.eks_client_sg
-  subnet_id         = module.vpc.public_subnets[0]
-}
 
 module "maven-sonarqube-server" {
   source            = "./../modules/maven-sonarqube-server"
