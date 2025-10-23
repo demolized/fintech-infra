@@ -4,7 +4,7 @@
 
 module "vpc" {
   source      = "./../modules/vpc"
-  main-region = var.main-region
+  main_region = var.main-region
 }
 
 # ################################################################################
@@ -15,9 +15,12 @@ module "eks" {
   source             = "./../modules/eks-cluster"
   cluster_name       = var.cluster_name
   rolearn            = var.rolearn
+  cni_role_arn       = module.iam.cni_role_arn
   security_group_ids = [module.eks-client-node.eks_client_sg]
   vpc_id             = module.vpc.vpc_id
   private_subnets    = module.vpc.private_subnets
+  tags               = local.common_tags
+  env_name           = var.env_name
 }
 
 # ################################################################################
@@ -119,9 +122,13 @@ module "ecr" {
 
 
 module "iam" {
-  source      = "./../modules/iam"
-  environment = var.env_name
-  tags        = local.common_tags
+  source            = "./../modules/iam"
+  environment       = var.env_name
+  aws_region        = var.main-region
+  aws_account_id    = var.aws_account_id
+  eks_oidc_provider = local.eks_oidc_provider
+  cluster_name      = var.cluster_name
+  tags              = local.common_tags
 }
 
 
@@ -138,16 +145,6 @@ module "jenkins-server" {
   subnet_id         = module.vpc.public_subnets[0]
 }
 
-
-module "terraform-node" {
-  source            = "./../modules/terraform-node"
-  ami_id            = local.final_ami_id
-  instance_type     = var.instance_type
-  key_name          = var.key_name
-  main-region       = var.main-region
-  security_group_id = module.eks-client-node.eks_client_sg
-  subnet_id         = module.vpc.public_subnets[0]
-}
 
 module "maven-sonarqube-server" {
   source            = "./../modules/maven-sonarqube-server"

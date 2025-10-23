@@ -18,6 +18,9 @@ data "aws_ami" "ubuntu_latest" {
 # Local variable that selects either the provided ami_id or the one fetched above.
 locals {
   final_ami_id = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu_latest[0].id
+
+  # Safely derive the OIDC provider URL after EKS is created
+  eks_oidc_provider = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
 }
 
 
