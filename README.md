@@ -53,9 +53,15 @@ aws eks --region us-east-2 update-kubeconfig --name prod-dominion-cluster
 - **[Implementation Guide](IMPLEMENTATION_GUIDE.md)** - Comprehensive deployment and architecture guide
 - **[Quick Start](QUICK_START.md)** - Commands and cheat sheet reference
 
-## ✨ Features
+## ✨ Senior SRE Features
 
-- ✅ **Multi-Environment Support** - dev, QA, UAT, production
+- 🚀 **GitOps & Multi-Cluster** - Automated deployments using ArgoCD
+- 📈 **Progressive Delivery** - Canary & Blue/Green deployments with Argo Rollouts
+- 🛡️ **Policy as Code** - Governance and security enforcement with Kyverno
+- 🧪 **Chaos Engineering** - Automated DR drills and resiliency testing with Chaos Mesh
+- 📊 **Advanced Observability** - SLO-driven alerting and OpenTelemetry tracing
+- 🚦 **Promotion Gates** - Explicit approval workflows between environments
+- ✅ **Multi-Environment Support** - dev, QA, UAT, production with parity checks
 - ✅ **EKS Cluster** - Fully managed Kubernetes with auto-scaling
 - ✅ **High Availability** - Multi-AZ deployment
 - ✅ **SSL/TLS** - Automatic certificate management

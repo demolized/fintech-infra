@@ -21,15 +21,6 @@ aws sts get-caller-identity
 
 ### 3️⃣ Update Configuration
 
-**CRITICAL: Fix typo in `dev/providers.tf` line 3:**
-```hcl
-# Change from:
-region = us-eest-2
-
-# To:
-region = "us-east-2"
-```
-
 **Update variables in `dev/variables.tf`:**
 ```hcl
 cluster_name     = "your-cluster-name"
@@ -66,12 +57,28 @@ terraform apply -auto-approve
 ### 5️⃣ Access Cluster
 
 ```bash
+### 5️⃣ Access Cluster
+
+```bash
 # Update kubeconfig
 aws eks --region us-east-2 update-kubeconfig --name prod-dominion-cluster
 
 # Verify access
 kubectl get nodes
 kubectl get pods -A
+```
+
+### 6️⃣ Access Senior SRE Tools
+
+```bash
+# ArgoCD UI (Get password)
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+# Argo Rollouts Dashboard
+kubectl argo rollouts dashboard -n argo-rollouts
+
+# Chaos Mesh Dashboard
+kubectl port-forward -n chaos-mesh svc/chaos-dashboard 2333:2333
 ```
 
 ---
@@ -102,7 +109,51 @@ terraform fmt -recursive
 terraform validate
 ```
 
-### Kubernetes
+### Kubernetes (Senior SRE Tools)
+
+#### ArgoCD (GitOps)
+```bash
+# Get ArgoCD admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+# Sync application
+argocd app sync fintech-app-dev
+
+# Check app status
+argocd app get fintech-app-dev
+```
+
+#### Argo Rollouts (Progressive Delivery)
+```bash
+# Watch rollout status
+kubectl argo rollouts get rollout fintech-app -n fintech
+
+# Promote rollout
+kubectl argo rollouts promote fintech-app -n fintech
+
+# Abort rollout
+kubectl argo rollouts abort fintech-app -n fintech
+```
+
+#### Chaos Mesh (Chaos Engineering)
+```bash
+# List chaos experiments
+kubectl get networkchaos,podchaos,iochaos -A
+
+# Apply a chaos experiment
+kubectl apply -f scripts/chaos/pod-kill.yaml
+```
+
+#### Kyverno (Policy as Code)
+```bash
+# Check policy violations
+kubectl get policyreport -A
+
+# List cluster policies
+kubectl get clusterpolicy
+```
+
+### Kubernetes (General)
 ```bash
 # Get cluster info
 kubectl cluster-info
@@ -207,7 +258,6 @@ kubectl get deployment -n kube-system aws-load-balancer-controller
 # Check logs
 kubectl logs -n kube-system deployment/aws-load-balancer-controller
 ```
-
 ---
 
 ## 🗂️ Module Overview
@@ -221,6 +271,11 @@ kubectl logs -n kube-system deployment/aws-load-balancer-controller
 | `ecr` | Container Registry | ECR Repositories |
 | `acm` | SSL Certificates | ACM Certificate + Validation |
 | `iam` | Access Control | IAM Roles, Service Accounts |
+| `argocd` | GitOps | ArgoCD Server, Repo Server |
+| `argo-rollouts` | Progressive Delivery | Rollout Controller |
+| `chaos-mesh` | Chaos Engineering | Chaos Daemon, Dashboard |
+| `kyverno` | Policy as Code | Kyverno Admission Controller |
+| `opentelemetry` | Observability | OTEL Collector |
 | `jenkins-server` | CI/CD | Jenkins Server |
 | `maven-sonarqube-server` | Code Quality | Maven + SonarQube |
 
@@ -303,7 +358,6 @@ terraform output jenkins_public_ip
 - [ ] S3 backend bucket exists
 - [ ] DynamoDB table exists
 - [ ] Variables updated in `variables.tf`
-- [ ] Provider region typo fixed
 - [ ] SSH key exists in AWS
 
 ### Deployment
@@ -318,11 +372,15 @@ terraform output jenkins_public_ip
 - [ ] Nodes are healthy
 - [ ] Namespaces created
 - [ ] ALB controller running
+- [ ] ArgoCD installed and accessible
+- [ ] Argo Rollouts controller running
+- [ ] Chaos Mesh dashboard accessible
+- [ ] Kyverno policies enforced
 - [ ] DNS configured
 - [ ] SSL certificate validated
-- [ ] Applications deployed
-- [ ] Monitoring enabled
+- [ ] Applications deployed via ArgoCD
+- [ ] Monitoring enabled with SLO alerts
 
 ---
 
-**Last Updated:** November 19, 2025
+**Last Updated:** January 1, 2026

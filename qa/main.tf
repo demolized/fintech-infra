@@ -212,4 +212,11 @@ module "maven-sonarqube-server" {
 #   grafana_security_group_id = module.managed_grafana.security_group_id
 # }
 
+module "argocd" {
+  source       = "./../modules/argocd"
+  cluster_name = module.eks.cluster_name
+  region       = var.main-region
+  depends_on   = [module.eks]
+}
+
 

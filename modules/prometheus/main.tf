@@ -17,24 +17,30 @@ module "prometheus" {
   EOT
 
   rule_group_namespaces = {
-    first = {
-      name = "rule-01"
+    slo_rules = {
+      name = "slo-rules"
       data = <<-EOT
       groups:
-        - name: test
+        - name: availability-slo
           rules:
-          - record: metric:recording_rule
-            expr: avg(rate(container_cpu_usage_seconds_total[5m]))
-      EOT
-    }
-    second = {
-      name = "rule-02"
-      data = <<-EOT
-      groups:
-        - name: test
+          - alert: LowAvailability
+            expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.01
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Availability SLO violated"
+              description: "Error rate is above 1% for the last 5 minutes."
+        - name: latency-slo
           rules:
-          - record: metric:recording_rule
-            expr: avg(rate(container_cpu_usage_seconds_total[5m]))
+          - alert: HighLatency
+            expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Latency SLO violated"
+              description: "95th percentile latency is above 500ms."
       EOT
     }
   }

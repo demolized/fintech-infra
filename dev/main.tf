@@ -237,4 +237,31 @@ module "maven-sonarqube-server" {
 #   grafana_security_group_id = module.managed_grafana.security_group_id
 # }
 
+module "argocd" {
+  source       = "./../modules/argocd"
+  cluster_name = module.eks.cluster_name
+  region       = var.main_region
+  depends_on   = [module.eks]
+}
+
+module "chaos_mesh" {
+  source     = "./../modules/chaos-mesh"
+  depends_on = [module.eks]
+}
+
+module "argo_rollouts" {
+  source     = "./../modules/argo-rollouts"
+  depends_on = [module.eks]
+}
+
+module "opentelemetry" {
+  source     = "./../modules/opentelemetry"
+  depends_on = [module.eks]
+}
+
+module "kyverno" {
+  source     = "./../modules/kyverno"
+  depends_on = [module.eks]
+}
+
 

@@ -1,0 +1,17 @@
+server:
+  service:
+    type: LoadBalancer
+  extraArgs:
+    - --insecure
+
+configs:
+  params:
+    server.insecure: true
+
+# Enable HA for ArgoCD
+controller:
+  replicas: 2
+repoServer:
+  replicas: 2
+server:
+  replicas: 2

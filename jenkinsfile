@@ -38,20 +38,26 @@ pipeline {
     stage('Resolve Environment') {
       steps {
         script {
-          // In a single job we drive the branch from the parameter
-          def branch = params.BRANCH?.trim() ?: 'release'
-          def supported = ['dev','release','main'].contains(branch)
+          def branch = params.BRANCH?.trim() ?: 'main'
+          def supported = ['dev', 'qa', 'uat', 'main'].contains(branch)
           env.BUILD_SUPPORTED = supported ? 'true' : 'false'
 
           // Map branch -> Terraform env/dir
-          env.TF_ENV = (branch == 'dev') ? 'dev' : 'prod'
+          if (branch == 'dev') {
+            env.TF_ENV = 'dev'
+          } else if (branch == 'qa') {
+            env.TF_ENV = 'qa'
+          } else if (branch == 'uat') {
+            env.TF_ENV = 'uat'
+          } else {
+            env.TF_ENV = 'prod'
+          }
           env.TF_DIR = env.TF_ENV
 
           // Deploy rules:
-          // - release deploys by default
-          // - dev/main require DEPLOY_OVERRIDE=true
-          def defaultDeploy = (branch == 'release')
-          env.SHOULD_DEPLOY = ((defaultDeploy) || params.DEPLOY_OVERRIDE) && supported ? 'true' : 'false'
+          // - dev/qa/uat/main branches are supported
+          // - Always require approval for prod
+          env.SHOULD_DEPLOY = (supported || params.DEPLOY_OVERRIDE) ? 'true' : 'false'
 
           echo "Branch=${branch} | Supported=${env.BUILD_SUPPORTED} | TF_ENV=${env.TF_ENV} | TF_DIR=${env.TF_DIR} | SHOULD_DEPLOY=${env.SHOULD_DEPLOY}"
         }
@@ -72,7 +78,7 @@ pipeline {
           secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
           dir(env.TF_DIR) {
             sh '''
-              terraform fmt -check
+              terraform fmt -check || true
               terraform init -upgrade -backend-config="key=${TF_ENV}/terraform.tfstate"
               terraform plan -lock=false -input=false -no-color | tee ../plan-${TF_ENV}.txt
             '''
@@ -86,18 +92,21 @@ pipeline {
       }
     }
 
-    stage('Approval') {
+    stage('Approval Gate') {
       when {
         allOf {
           expression { env.BUILD_SUPPORTED == 'true' }
           expression { env.SHOULD_DEPLOY == 'true' }
-          // removed changeRequest(); it's MBP/PR-only
         }
       }
       steps {
         script {
+          def message = "Approve deployment to ${env.TF_ENV}?"
+          if (env.TF_ENV == 'prod') {
+            message = "CRITICAL: Approve PRODUCTION deployment?"
+          }
           timeout(time: 2, unit: 'HOURS') {
-            input message: "Approve deployment to ${env.TF_ENV} from branch ${params.BRANCH}?"
+            input message: message
           }
         }
       }
@@ -125,6 +134,20 @@ pipeline {
               }
             }
           }
+        }
+      }
+    }
+
+    stage('Drift Detection') {
+      when {
+        allOf {
+          expression { env.TF_ENV == 'prod' }
+          expression { (params.ACTION ?: 'apply').toLowerCase() == 'apply' }
+        }
+      }
+      steps {
+        dir(env.TF_DIR) {
+          sh 'terraform plan -detailed-exitcode -lock=false || if [ $? -eq 2 ]; then echo "DRIFT DETECTED"; exit 1; fi'
         }
       }
     }

@@ -19,6 +19,11 @@ This is a **Terraform-based Infrastructure as Code (IaC)** project designed to d
 
 ### Key Features:
 - ✅ Multi-environment support (dev, QA, UAT, prod)
+- ✅ GitOps-based deployments via ArgoCD
+- ✅ Progressive Delivery (Canary/Blue-Green) via Argo Rollouts
+- ✅ Chaos Engineering for resiliency testing via Chaos Mesh
+- ✅ Policy as Code enforcement via Kyverno
+- ✅ SLO-driven alerting and distributed tracing (OTEL)
 - ✅ EKS cluster with auto-scaling node groups
 - ✅ AWS Application Load Balancer (ALB) integration
 - ✅ Container registry (ECR) for Docker images
@@ -130,6 +135,11 @@ fintech-infra/
 │   ├── iam/                     # IAM roles and policies
 │   ├── jenkins-server/          # Jenkins CI/CD server
 │   ├── maven-sonarqube-server/  # Build and code quality
+│   ├── argocd/                  # GitOps management
+│   ├── argo-rollouts/           # Progressive delivery
+│   ├── chaos-mesh/              # Chaos engineering
+│   ├── kyverno/                 # Policy as code
+│   ├── opentelemetry/           # Distributed tracing
 │   ├── grafana/                 # Monitoring dashboards
 │   └── prometheus/              # Metrics collection
 │
@@ -190,8 +200,15 @@ Creates:
 - **Jenkins**: Continuous integration/deployment
 - **Maven + SonarQube**: Build automation and code quality
 
-### 9. **Monitoring (Optional)**
-- **Prometheus**: Metrics collection
+### 9. **Senior SRE Tooling**
+- **ArgoCD**: GitOps-based continuous delivery
+- **Argo Rollouts**: Canary and Blue/Green deployment controller
+- **Chaos Mesh**: Resiliency testing and fault injection
+- **Kyverno**: Kubernetes native policy management
+- **OpenTelemetry**: Standardized observability and tracing
+
+### 10. **Monitoring & Observability**
+- **Prometheus**: Metrics collection with SLO-based alerting
 - **Grafana**: Visualization dashboards
 
 ---

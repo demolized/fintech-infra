@@ -3,21 +3,23 @@
 ################################################################################
 
 
+data "aws_availability_zones" "available" {}
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
-  name = "eks-vpc"
-  cidr = "10.0.0.0/16"
+  name = "${var.env_name}-eks-vpc"
+  cidr = var.vpc_cidr
 
-  azs = ["us-east-2a", "us-east-2b", "us-east-2c"]
-  #private_subnets     = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k)]
-  #public_subnets      = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 4)]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  azs             = slice(data.aws_availability_zones.available.names, 0, 3)
+  private_subnets = [for k, v in slice(data.aws_availability_zones.available.names, 0, 3) : cidrsubnet(var.vpc_cidr, 8, k)]
+  public_subnets  = [for k, v in slice(data.aws_availability_zones.available.names, 0, 3) : cidrsubnet(var.vpc_cidr, 8, k + 100)]
+  
   map_public_ip_on_launch = true
 
   enable_nat_gateway = true
+  single_nat_gateway = true # Cost optimization for non-prod
 
   public_subnet_tags = {
     "kubernetes.io/role/elb" = 1
@@ -29,7 +31,7 @@ module "vpc" {
 
   tags = {
     Terraform   = "true"
-    Environment = "dev"
+    Environment = var.env_name
   }
 }
 

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fintech-app-{{ .Environment }}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ndiforfusi/fintech-infra.git
+    targetRevision: HEAD
+    path: k8s/{{ .Environment }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: fintech
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
