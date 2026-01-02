@@ -57,9 +57,6 @@ terraform apply -auto-approve
 ### 5️⃣ Access Cluster
 
 ```bash
-### 5️⃣ Access Cluster
-
-```bash
 # Update kubeconfig
 aws eks --region us-east-2 update-kubeconfig --name prod-dominion-cluster
 
